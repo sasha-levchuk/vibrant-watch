@@ -29,14 +29,13 @@ func _input(event):
 
 func _on_button_down():
 	is_dragging = true
-#	frame_delay_msec
-	ProjectSettings.set_setting( 'application/run/frame_delay_msec', 0 )
-#	frame_delay_msec = 0
+	Engine.max_fps = 60
 	drag_offset = DisplayServer.mouse_get_position() - get_window().position
 
 
 func _on_button_up():
-	ProjectSettings.set_setting( 'application/run/frame_delay_msec', 1000 )
+	Engine.max_fps = 1
+	ProjectSettings.set_setting( 'display/window/size/initial_position', get_window().position )
 	is_dragging = false
 "
 
