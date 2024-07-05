@@ -1,0 +1,58 @@
+[gd_scene load_steps=3 format=3 uid="uid://f1vvoqdrimh7"]
+
+[ext_resource type="Texture2D" uid="uid://3660ojhvsyqn" path="res://icon.svg" id="1_1v6j1"]
+
+[sub_resource type="GDScript" id="GDScript_tf4lb"]
+script/source = "extends TextureProgressBar
+var elapsed : float = 0.05
+var SPEED : float = 10 # timer ticks per second
+var is_dragged : bool = false
+var drag_offset : Vector2i = Vector2i.ZERO
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	pass # Replace with function body.
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+#	print(get_global_mouse_position())
+#	get_window().position = get_global_mouse_position()
+	elapsed += delta
+	if elapsed > 1/SPEED:
+		elapsed -= 1/SPEED
+		if value < max_value:
+			value += 1
+		else:
+			value = min_value
+
+func _input(event):
+	if event is InputEventMouseButton:
+		is_dragged = event.is_pressed()
+		drag_offset = Vector2i(get_global_mouse_position()) + get_window().position
+	elif event is InputEventMouseMotion and is_dragged:
+		get_window().position = Vector2i(get_global_mouse_position()) - drag_offset
+#		print(event)
+
+func _on_mouse_entered():
+	pass # Replace with function body.
+
+
+func _on_mouse_exited():
+	pass # Replace with function body.
+"
+
+[node name="Node2D" type="Node2D"]
+
+[node name="TextureProgressBar" type="TextureProgressBar" parent="."]
+offset_right = 283.0
+offset_bottom = 247.0
+max_value = 60.0
+value = 33.0
+fill_mode = 4
+texture_under = ExtResource("1_1v6j1")
+texture_progress = ExtResource("1_1v6j1")
+tint_under = Color(0, 0, 0, 1)
+script = SubResource("GDScript_tf4lb")
+
+[connection signal="mouse_entered" from="TextureProgressBar" to="TextureProgressBar" method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="TextureProgressBar" to="TextureProgressBar" method="_on_mouse_exited"]
