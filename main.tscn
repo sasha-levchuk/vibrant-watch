@@ -1,6 +1,15 @@
-[gd_scene load_steps=4 format=3 uid="uid://f1vvoqdrimh7"]
+[gd_scene load_steps=6 format=3 uid="uid://f1vvoqdrimh7"]
 
 [ext_resource type="Texture2D" uid="uid://3660ojhvsyqn" path="res://icon.svg" id="1_1v6j1"]
+
+[sub_resource type="GDScript" id="GDScript_eu11m"]
+resource_name = "main"
+script/source = "extends Node2D
+
+
+func _ready():
+	ProjectSettings.load_resource_pack()
+"
 
 [sub_resource type="GDScript" id="GDScript_6sbef"]
 resource_name = "progress"
@@ -14,8 +23,38 @@ func _process(_delta):
 #	print(time.second)
 "
 
-[sub_resource type="GDScript" id="GDScript_caltt"]
-resource_name = "btn"
+[sub_resource type="GDScript" id="GDScript_xqv6w"]
+resource_name = "drag_button"
+script/source = "extends Button
+var drag_offset : Vector2i
+
+
+func _ready():
+	set_process_input(false)
+
+
+func _input(event):
+	if not event is InputEventMouseMotion: return
+	get_window().position = DisplayServer.mouse_get_position() - drag_offset
+
+
+func _on_button_down():
+	print(\"drag start\")
+	set_process_input(true)
+	Engine.max_fps = 60
+	drag_offset = DisplayServer.mouse_get_position() - get_window().position
+
+
+func _on_button_up():
+	print(\"drag end\")
+	set_process_input(false)
+	Engine.max_fps = 1
+	ProjectSettings.set_setting( 'display/window/size/initial_position', get_window().position )
+	ProjectSettings.save_custom('override.cfg')
+"
+
+[sub_resource type="GDScript" id="GDScript_ymbr8"]
+resource_name = "resize_button"
 script/source = "extends Button
 #var drag_offset : Vector2i
 var is_resizing : bool
@@ -43,6 +82,7 @@ func _on_button_up():
 "
 
 [node name="Node2D" type="Node2D"]
+script = SubResource("GDScript_eu11m")
 
 [node name="MinutesProgress" type="TextureProgressBar" parent="."]
 offset_right = 283.0
@@ -58,7 +98,7 @@ script = SubResource("GDScript_6sbef")
 modulate = Color(1, 1, 1, 0)
 offset_right = 128.0
 offset_bottom = 128.0
-script = SubResource("GDScript_caltt")
+script = SubResource("GDScript_xqv6w")
 
 [node name="ResizeButton" type="Button" parent="."]
 offset_left = 111.0
@@ -67,7 +107,7 @@ offset_right = 128.0
 offset_bottom = 128.0
 icon = ExtResource("1_1v6j1")
 expand_icon = true
-script = SubResource("GDScript_caltt")
+script = SubResource("GDScript_ymbr8")
 
 [connection signal="button_down" from="DragButton" to="DragButton" method="_on_button_down"]
 [connection signal="button_up" from="DragButton" to="DragButton" method="_on_button_up"]
