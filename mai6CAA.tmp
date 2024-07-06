@@ -31,7 +31,7 @@ var time : Dictionary
 
 func _process(_delta):
 	time = Time.get_datetime_dict_from_system()
-	value = time.minute * 60 + time.second
+	value = max_value - time.minute * 60 - time.second
 	
 	var t: float = value / max_value
 	var delta: float = 1.0 / steps
@@ -39,8 +39,7 @@ func _process(_delta):
 	var local_t: float = fmod( t, delta ) / delta
 	print(local_t)
 
-	tint_progress = colors[index].lerp( colors[index+1], local_t )
-	tint_under = tint_progress.darkened(0.7)
+	tint_under = colors[index].lerp( colors[index+1], local_t )
 #	print(Time.get_ticks_msec())
 #	print(time.second)
 "
@@ -115,13 +114,13 @@ script = SubResource("GDScript_eu11m")
 offset_right = 283.0
 offset_bottom = 247.0
 max_value = 3600.0
-fill_mode = 4
+fill_mode = 5
 texture_under = ExtResource("1_yikqb")
 texture_progress = ExtResource("1_yikqb")
 tint_under = Color(1, 1, 1, 0)
 tint_progress = Color(0, 0, 0.160784, 0.752941)
 script = SubResource("GDScript_6sbef")
-colors = PackedColorArray(1, 0, 1, 1, 0, 0, 1, 1, 0, 0.701961, 0.701961, 1, 0.462745, 0.839216, 0.462745, 1, 0.741176, 0.741176, 0.309804, 1, 1, 0, 0, 1)
+colors = PackedColorArray(1, 0, 1, 0.509804, 0, 0, 1, 0.780392, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1)
 
 [node name="DragButton" type="Button" parent="."]
 modulate = Color(1, 1, 1, 0)
