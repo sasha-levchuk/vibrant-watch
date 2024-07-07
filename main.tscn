@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://f1vvoqdrimh7"]
+[gd_scene load_steps=7 format=3 uid="uid://f1vvoqdrimh7"]
 
 [ext_resource type="Texture2D" uid="uid://cey74pidop5xu" path="res://circle 128p.png" id="1_yikqb"]
 
@@ -28,22 +28,27 @@ script/source = "extends TextureProgressBar
 var time : Dictionary
 @export var colors : PackedColorArray
 @onready var steps: int = colors.size() - 1
+@onready var label: Label = $Label
 
 func _process(_delta):
 	time = Time.get_datetime_dict_from_system()
 	value = time.minute * 60 + time.second
+	label.text = str( time.hour )
 	
 	var t: float = value / max_value
 	var delta: float = 1.0 / steps
 	var index: int = int( t / delta )
 	var local_t: float = fmod( t, delta ) / delta
-	print(local_t)
+#	print(local_t)
 
 	tint_progress = colors[index].lerp( colors[index+1], local_t )
 	tint_under = tint_progress.darkened(0.7)
 #	print(Time.get_ticks_msec())
 #	print(time.second)
 "
+
+[sub_resource type="LabelSettings" id="LabelSettings_8ktn1"]
+font_size = 32
 
 [sub_resource type="GDScript" id="GDScript_xqv6w"]
 resource_name = "drag_button"
@@ -122,6 +127,15 @@ tint_under = Color(1, 1, 1, 0)
 tint_progress = Color(0, 0, 0.160784, 0.752941)
 script = SubResource("GDScript_6sbef")
 colors = PackedColorArray(1, 0, 1, 1, 0, 0, 1, 1, 0, 0.701961, 0.701961, 1, 0.462745, 0.839216, 0.462745, 1, 0.741176, 0.741176, 0.309804, 1, 1, 0, 0, 1)
+
+[node name="Label" type="Label" parent="MinutesProgress"]
+layout_mode = 0
+offset_right = 128.0
+offset_bottom = 128.0
+text = "0"
+label_settings = SubResource("LabelSettings_8ktn1")
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="DragButton" type="Button" parent="."]
 modulate = Color(1, 1, 1, 0)

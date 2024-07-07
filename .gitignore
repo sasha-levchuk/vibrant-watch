@@ -2,3 +2,6 @@
 .godot/
 .import
 .tmp
+.cfg
+.exe
+vibrant_watch_godot.exe
