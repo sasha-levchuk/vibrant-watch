@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://f1vvoqdrimh7"]
+[gd_scene load_steps=11 format=3 uid="uid://f1vvoqdrimh7"]
 
 [ext_resource type="Texture2D" uid="uid://cey74pidop5xu" path="res://circle 128p.png" id="1_yikqb"]
 
@@ -31,10 +31,10 @@ var time : Dictionary
 @onready var label_hours: Label = $LabelHours
 @onready var label_minutes: Label = $LabelMinutes
 @onready var label_seconds: Label = $LabelSeconds
-@onready var progress_seconds: TextureProgressBar = $ProgressSeconds
+@onready var progress_seconds: TextureProgressBar = $\"../ProgressSeconds\"
 
 func _process(_delta):
-	print(Time.get_time_string_from_system())
+#	print(Time.get_time_string_from_system())
 	time = Time.get_datetime_dict_from_system()
 	value = time.minute * 60 + time.second
 	label_hours.text = str( time.hour )
@@ -52,6 +52,14 @@ func _process(_delta):
 	tint_under = tint_progress.darkened(0.7)
 #	print(Time.get_ticks_msec())
 #	print(time.second)
+
+
+func _on_mouse_entered():
+	print(\"minutes mouse entered\")
+
+
+func _on_progress_seconds_mouse_entered():
+	print(\"seconds mouse entered\")
 "
 
 [sub_resource type="LabelSettings" id="LabelSettings_yp2sd"]
@@ -94,6 +102,18 @@ func _on_button_up():
 	on_drag_ended.emit()
 "
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nwl7w"]
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k2i2l"]
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
 [sub_resource type="GDScript" id="GDScript_ymbr8"]
 resource_name = "resize_button"
 script/source = "extends Button
@@ -124,14 +144,32 @@ func _on_button_up():
 	Engine.max_fps = 1
 	set_process_input(false)
 	on_resize_ended.emit()
+
+
+func _on_mouse_entered():
+	print(\"resize handle hovered\")
 "
 
 [node name="Main" type="Node2D"]
 script = SubResource("GDScript_eu11m")
 
+[node name="ProgressSeconds" type="TextureProgressBar" parent="."]
+show_behind_parent = true
+offset_right = 128.0
+offset_bottom = 128.0
+max_value = 60.0
+value = 33.0
+fill_mode = 4
+texture_under = ExtResource("1_yikqb")
+texture_progress = ExtResource("1_yikqb")
+tint_under = Color(0, 0, 0, 1)
+
 [node name="MinutesProgress" type="TextureProgressBar" parent="."]
-offset_right = 283.0
-offset_bottom = 247.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 132.0
+offset_bottom = 132.0
+scale = Vector2(0.938, 0.938)
 max_value = 3600.0
 fill_mode = 4
 texture_under = ExtResource("1_yikqb")
@@ -140,30 +178,19 @@ tint_under = Color(1, 1, 1, 0)
 tint_progress = Color(0, 0, 0.160784, 0.752941)
 script = SubResource("GDScript_6sbef")
 colors = PackedColorArray(1, 0, 1, 1, 0, 0, 1, 1, 0, 0.701961, 0.701961, 1, 0.462745, 0.839216, 0.462745, 1, 0.741176, 0.741176, 0.309804, 1, 1, 0, 0, 1)
-
-[node name="ProgressSeconds" type="TextureProgressBar" parent="MinutesProgress"]
-offset_left = 16.0
-offset_top = 16.0
-offset_right = 144.0
-offset_bottom = 144.0
-scale = Vector2(0.75, 0.75)
-max_value = 60.0
-value = 33.0
-fill_mode = 4
-texture_progress = ExtResource("1_yikqb")
-tint_progress = Color(1, 1, 1, 0.498039)
+metadata/_edit_group_ = true
 
 [node name="Circle128p" type="Sprite2D" parent="MinutesProgress"]
 modulate = Color(0, 0, 0, 0.643137)
 position = Vector2(64, 64)
-scale = Vector2(0.6, 0.6)
+scale = Vector2(0.8, 0.8)
 texture = ExtResource("1_yikqb")
 
 [node name="LabelHours" type="Label" parent="MinutesProgress"]
 layout_mode = 0
-offset_left = 41.0
+offset_left = 31.2222
 offset_top = 36.0
-offset_right = 62.0
+offset_right = 74.2222
 offset_bottom = 89.0
 text = "0"
 label_settings = SubResource("LabelSettings_yp2sd")
@@ -172,19 +199,19 @@ vertical_alignment = 1
 
 [node name="LabelMinutes" type="Label" parent="MinutesProgress"]
 layout_mode = 0
-offset_left = 63.0
-offset_top = 53.0
-offset_right = 89.0
-offset_bottom = 84.0
+offset_left = 75.2223
+offset_top = 51.9339
+offset_right = 101.222
+offset_bottom = 82.9339
 text = "12"
 label_settings = SubResource("LabelSettings_8ktn1")
 vertical_alignment = 1
 
 [node name="LabelSeconds" type="Label" parent="MinutesProgress"]
 layout_mode = 0
-offset_left = 64.0
+offset_left = 76.2222
 offset_top = 44.0
-offset_right = 84.0
+offset_right = 96.2222
 offset_bottom = 64.0
 text = "34"
 label_settings = SubResource("LabelSettings_flwb1")
@@ -197,16 +224,22 @@ offset_bottom = 128.0
 script = SubResource("GDScript_xqv6w")
 
 [node name="ResizeButton" type="Button" parent="."]
+visible = false
 modulate = Color(0.796078, 0.796078, 0.796078, 1)
-offset_left = 107.0
-offset_top = 87.0
-offset_right = 124.0
-offset_bottom = 104.0
+offset_left = 64.0
+offset_top = 64.0
+offset_right = 128.0
+offset_bottom = 128.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_nwl7w")
+theme_override_styles/hover = SubResource("StyleBoxFlat_k2i2l")
 icon = ExtResource("1_yikqb")
 expand_icon = true
 script = SubResource("GDScript_ymbr8")
 
+[connection signal="mouse_entered" from="ProgressSeconds" to="MinutesProgress" method="_on_progress_seconds_mouse_entered"]
+[connection signal="mouse_entered" from="MinutesProgress" to="MinutesProgress" method="_on_mouse_entered"]
 [connection signal="button_down" from="DragButton" to="DragButton" method="_on_button_down"]
 [connection signal="button_up" from="DragButton" to="DragButton" method="_on_button_up"]
 [connection signal="button_down" from="ResizeButton" to="ResizeButton" method="_on_button_down"]
 [connection signal="button_up" from="ResizeButton" to="ResizeButton" method="_on_button_up"]
+[connection signal="mouse_entered" from="ResizeButton" to="ResizeButton" method="_on_mouse_entered"]
