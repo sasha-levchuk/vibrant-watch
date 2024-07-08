@@ -78,10 +78,14 @@ font_size = 12
 [sub_resource type="GDScript" id="GDScript_xqv6w"]
 resource_name = "drag_button"
 script/source = "extends Button
-var drag_offset : Vector2i
-var distance : float
+var state: int
+enum { IS_DRAGGING, IS_RESIZING }
+var drag_offset: Vector2i
+var init_center: Vector2i
+var init_distance: float
+var init_size: Vector2i
+@onready var win: Window = get_window()
 signal on_drag_ended
-@onready var origin: Vector2 = ( position + size ) / 2
 
 
 func _ready():
@@ -95,20 +99,35 @@ func _ready():
 
 func _input(event):
 	if not event is InputEventMouseMotion: return
-	distance = get_local_mouse_position().distance_to(origin)
 	if not is_pressed(): return
-	get_window().position = DisplayServer.mouse_get_position() - drag_offset
+	var mouse_pos: Vector2i = DisplayServer.mouse_get_position()
+	if state == IS_DRAGGING:
+		win.position = mouse_pos - drag_offset
+	elif state == IS_RESIZING:
+		var distance: float = ( mouse_pos - init_center ).length()
+		win.size = init_size * ( distance / init_distance )
+		var center = win.position + ( win.size / 2 )
+		win.position -= center - init_center
+		print( [ init_distance, distance, init_size, win.size, init_center, center ] )
 
 
 func _on_button_down():
-	print(\"drag start\")
 	Engine.max_fps = 60
-	if distance < 58:
-		drag_offset = DisplayServer.mouse_get_position() - get_window().position
+	var mouse_pos: Vector2i = DisplayServer.mouse_get_position()
+	init_center = win.position + win.size / 2
+	init_distance = ( mouse_pos - init_center ).length()
+	if init_distance < win.size.x * 0.4:
+		print(\"drag start\")
+		state = IS_DRAGGING
+		drag_offset = mouse_pos - win.position
+	else:
+		print(\"resizing start\")
+		state = IS_RESIZING
+		init_size = win.size
 
 
 func _on_button_up():
-	print(\"drag end\")
+	print(\"drag/resizing end\")
 	Engine.max_fps = 10
 	on_drag_ended.emit()
 
