@@ -5,3 +5,6 @@
 .cfg
 .exe
 vibrant_watch_godot.exe
+*.tmp
+*.cfg
+*.cfg

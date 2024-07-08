@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://f1vvoqdrimh7"]
+[gd_scene load_steps=9 format=3 uid="uid://f1vvoqdrimh7"]
 
 [ext_resource type="Texture2D" uid="uid://cey74pidop5xu" path="res://circle 128p.png" id="1_yikqb"]
 
@@ -28,12 +28,19 @@ script/source = "extends TextureProgressBar
 var time : Dictionary
 @export var colors : PackedColorArray
 @onready var steps: int = colors.size() - 1
-@onready var label: Label = $Label
+@onready var label_hours: Label = $LabelHours
+@onready var label_minutes: Label = $LabelMinutes
+@onready var label_seconds: Label = $LabelSeconds
+@onready var progress_seconds: TextureProgressBar = $ProgressSeconds
 
 func _process(_delta):
+	print(Time.get_time_string_from_system())
 	time = Time.get_datetime_dict_from_system()
 	value = time.minute * 60 + time.second
-	label.text = str( time.hour )
+	label_hours.text = str( time.hour )
+	label_minutes.text = str( time.minute )
+	label_seconds.text = str( time.second )
+	progress_seconds.value = time.second
 	
 	var t: float = value / max_value
 	var delta: float = 1.0 / steps
@@ -47,8 +54,14 @@ func _process(_delta):
 #	print(time.second)
 "
 
+[sub_resource type="LabelSettings" id="LabelSettings_yp2sd"]
+font_size = 36
+
 [sub_resource type="LabelSettings" id="LabelSettings_8ktn1"]
-font_size = 32
+font_size = 20
+
+[sub_resource type="LabelSettings" id="LabelSettings_flwb1"]
+font_size = 12
 
 [sub_resource type="GDScript" id="GDScript_xqv6w"]
 resource_name = "drag_button"
@@ -128,13 +141,53 @@ tint_progress = Color(0, 0, 0.160784, 0.752941)
 script = SubResource("GDScript_6sbef")
 colors = PackedColorArray(1, 0, 1, 1, 0, 0, 1, 1, 0, 0.701961, 0.701961, 1, 0.462745, 0.839216, 0.462745, 1, 0.741176, 0.741176, 0.309804, 1, 1, 0, 0, 1)
 
-[node name="Label" type="Label" parent="MinutesProgress"]
+[node name="ProgressSeconds" type="TextureProgressBar" parent="MinutesProgress"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 144.0
+offset_bottom = 144.0
+scale = Vector2(0.75, 0.75)
+max_value = 60.0
+value = 33.0
+fill_mode = 4
+texture_progress = ExtResource("1_yikqb")
+tint_progress = Color(1, 1, 1, 0.498039)
+
+[node name="Circle128p" type="Sprite2D" parent="MinutesProgress"]
+modulate = Color(0, 0, 0, 0.643137)
+position = Vector2(64, 64)
+scale = Vector2(0.6, 0.6)
+texture = ExtResource("1_yikqb")
+
+[node name="LabelHours" type="Label" parent="MinutesProgress"]
 layout_mode = 0
-offset_right = 128.0
-offset_bottom = 128.0
+offset_left = 41.0
+offset_top = 36.0
+offset_right = 62.0
+offset_bottom = 89.0
 text = "0"
+label_settings = SubResource("LabelSettings_yp2sd")
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="LabelMinutes" type="Label" parent="MinutesProgress"]
+layout_mode = 0
+offset_left = 63.0
+offset_top = 53.0
+offset_right = 89.0
+offset_bottom = 84.0
+text = "12"
 label_settings = SubResource("LabelSettings_8ktn1")
-horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LabelSeconds" type="Label" parent="MinutesProgress"]
+layout_mode = 0
+offset_left = 64.0
+offset_top = 44.0
+offset_right = 84.0
+offset_bottom = 64.0
+text = "34"
+label_settings = SubResource("LabelSettings_flwb1")
 vertical_alignment = 1
 
 [node name="DragButton" type="Button" parent="."]
