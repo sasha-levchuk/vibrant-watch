@@ -1,0 +1,2 @@
+set the drag area to be the radius of the minutes hand
+fix text issues as minimum size
