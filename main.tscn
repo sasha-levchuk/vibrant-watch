@@ -34,28 +34,23 @@ var time : Dictionary
 @onready var progress_seconds: TextureProgressBar = $\"../ProgressSeconds\"
 
 func _process(_delta):
-#	print(Time.get_time_string_from_system())
 	time = Time.get_datetime_dict_from_system()
 	value = time.minute * 60 + time.second
 	label_hours.text = str( time.hour )
 	label_minutes.text = str( time.minute )
-	label_seconds.text = str( time.second )
-	progress_seconds.value = time.second
-	if time.second == 0:
+	if time.second == 0 and progress_seconds.value == 59:
 		var swap: Color = progress_seconds.tint_progress
 		progress_seconds.tint_progress = progress_seconds.tint_under
 		progress_seconds.tint_under = swap
+	progress_seconds.value = time.second
 	
 	var t: float = value / max_value
 	var delta: float = 1.0 / steps
 	var index: int = int( t / delta )
 	var local_t: float = fmod( t, delta ) / delta
-#	print(local_t)
 
 	tint_progress = colors[index].lerp( colors[index+1], local_t )
 	tint_under = tint_progress.darkened(0.7)
-#	print(Time.get_ticks_msec())
-#	print(time.second)
 
 
 func _on_mouse_entered():
@@ -73,7 +68,7 @@ font_size = 36
 font_size = 20
 
 [sub_resource type="LabelSettings" id="LabelSettings_flwb1"]
-font_size = 12
+font_size = 10
 
 [sub_resource type="GDScript" id="GDScript_xqv6w"]
 resource_name = "drag_button"
@@ -91,10 +86,6 @@ signal on_drag_ended
 func _ready():
 	on_drag_ended.connect( $\"..\".save_cfg )
 	set_process_input(false)
-
-
-#func _process(delta):
-#	if true: return
 
 
 func _input(event):
@@ -116,7 +107,7 @@ func _on_button_down():
 	var mouse_pos: Vector2i = DisplayServer.mouse_get_position()
 	init_center = win.position + win.size / 2
 	init_distance = ( mouse_pos - init_center ).length()
-	if init_distance < win.size.x * 0.4:
+	if init_distance < win.size.x * 0.5 * $\"../MinutesProgress\".scale.x:
 		print(\"drag start\")
 		state = IS_DRAGGING
 		drag_offset = mouse_pos - win.position
@@ -207,11 +198,11 @@ texture_progress = ExtResource("1_yikqb")
 tint_under = Color(0, 0, 0, 1)
 
 [node name="MinutesProgress" type="TextureProgressBar" parent="."]
-offset_left = 4.0
-offset_top = 4.0
-offset_right = 132.0
-offset_bottom = 132.0
-scale = Vector2(0.938, 0.938)
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 136.0
+offset_bottom = 136.0
+scale = Vector2(0.875, 0.875)
 max_value = 3600.0
 fill_mode = 4
 texture_under = ExtResource("1_yikqb")
@@ -252,9 +243,9 @@ vertical_alignment = 1
 [node name="LabelSeconds" type="Label" parent="MinutesProgress"]
 layout_mode = 0
 offset_left = 76.2222
-offset_top = 44.0
+offset_top = 42.8571
 offset_right = 96.2222
-offset_bottom = 64.0
+offset_bottom = 62.8571
 text = "34"
 label_settings = SubResource("LabelSettings_flwb1")
 vertical_alignment = 1
