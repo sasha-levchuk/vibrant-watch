@@ -38,6 +38,7 @@ func _process(_delta):
 	value = time.minute * 60 + time.second
 	label_hours.text = str( time.hour )
 	label_minutes.text = str( time.minute )
+	label_seconds.text = str( time.second )
 	if time.second == 0 and progress_seconds.value == 59:
 		var swap: Color = progress_seconds.tint_progress
 		progress_seconds.tint_progress = progress_seconds.tint_under
