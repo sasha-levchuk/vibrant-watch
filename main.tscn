@@ -50,8 +50,8 @@ func _process(_delta):
 	var index: int = int( t / delta )
 	var local_t: float = fmod( t, delta ) / delta
 
-	tint_progress = colors[index].lerp( colors[index+1], local_t )
-	tint_under = tint_progress.darkened(0.7)
+	tint_progress = colors[index].lerp( colors[index+1], local_t ).lightened(0.2)
+	tint_under = tint_progress.darkened(0.8)
 
 
 func _on_mouse_entered():
@@ -211,11 +211,11 @@ texture_progress = ExtResource("1_yikqb")
 tint_under = Color(1, 1, 1, 0)
 tint_progress = Color(0, 0, 0.160784, 0.752941)
 script = SubResource("GDScript_6sbef")
-colors = PackedColorArray(1, 0, 1, 1, 0, 0, 1, 1, 0, 0.701961, 0.701961, 1, 0.462745, 0.839216, 0.462745, 1, 0.811765, 0.811765, 0.32549, 1, 1, 0.160784, 0.160784, 1, 1, 0, 1, 1)
+colors = PackedColorArray(1, 0, 1, 1, 0.211765, 0.211765, 1, 1, 0, 0.701961, 0.701961, 1, 0.462745, 0.839216, 0.462745, 1, 0.811765, 0.811765, 0.32549, 1, 1, 0.160784, 0.160784, 1, 1, 0, 1, 1)
 metadata/_edit_group_ = true
 
 [node name="Circle128p" type="Sprite2D" parent="MinutesProgress"]
-modulate = Color(0, 0, 0, 0.643137)
+modulate = Color(0, 0, 0, 0.811765)
 position = Vector2(64, 64)
 scale = Vector2(0.625, 0.625)
 texture = ExtResource("1_yikqb")
