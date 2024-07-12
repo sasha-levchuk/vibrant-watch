@@ -1,0 +1,130 @@
+[gd_scene load_steps=4 format=3 uid="uid://cpd7eamcb24bf"]
+
+[ext_resource type="Texture2D" uid="uid://cey74pidop5xu" path="res://circle 128p.png" id="1_i1cbs"]
+
+[sub_resource type="GDScript" id="GDScript_ah8ox"]
+resource_name = "gauge"
+script/source = "extends TextureProgressBar
+@export var MAX_VALUE: int = 60
+enum TimeUnits { SECONDS, MINUTES, HOURS }
+@export var time_unit: TimeUnits
+var show_text: bool = true
+enum HorSides {LEFT, RIGHT, BOTH}
+@export var hor_side: HorSides
+enum VerSides {TOP, BOTTOM, BOTH}
+@export var ver_side: VerSides
+var VER_OFFSET: int = 3
+@export var text_size: int = 10
+@export var anchor: Marker2D
+@export var use_gradient: bool = false
+@export var colors: PackedColorArray = PackedColorArray([
+	Color(1,0,1),
+	Color(0,0,1),
+	Color(0,1,1),
+	Color(0,1,0),
+	Color(1,1,0),
+	Color(1,0,0)])
+@onready var delta: float = 1.0 / ( colors.size() - 1 ) # this is for color calc
+@onready var label: Label = $Label
+@onready var unit_mult := int( pow(60, time_unit) )
+
+
+func _ready():
+	MAX_VALUE *= unit_mult
+	max_value = MAX_VALUE
+	var top_left = Vector2(32,32)
+	var bottom_right = Vector2(96,96)
+	if not show_text:
+		label.queue_free()
+		return
+	label.label_settings.font_size = text_size
+	label.horizontal_alignment = [
+		HORIZONTAL_ALIGNMENT_RIGHT,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		HORIZONTAL_ALIGNMENT_CENTER
+	][ hor_side ]
+	label.vertical_alignment = [
+		VERTICAL_ALIGNMENT_BOTTOM,
+		VERTICAL_ALIGNMENT_TOP,
+		VERTICAL_ALIGNMENT_CENTER
+	][ ver_side ]
+	if hor_side==HorSides.RIGHT: 
+		label.position.x = anchor.position.x
+		label.size.x = bottom_right.x - anchor.position.x
+	elif hor_side==HorSides.LEFT:
+		label.size.x = anchor.position.x - top_left.x
+	if ver_side==VerSides.BOTTOM: 
+		label.position.y = anchor.position.y - VER_OFFSET
+		label.size.y = bottom_right.y - anchor.position.y
+	elif ver_side==VerSides.TOP:
+		label.size.y = anchor.position.y - top_left.y + VER_OFFSET
+
+	
+	
+#	label.vertical_alignment = ver_align
+#	if hor_align == HORIZONTAL_ALIGNMENT_LEFT:
+#		label.size.x = bottom_right.x - anchor.position.x
+#	elif hor_align == HORIZONTAL_ALIGNMENT_RIGHT:
+#		label.position.x = top_left.x #anchor.position.x
+#		label.size.x = anchor.position.x - bottom_right.x
+#	if ver_align == VERTICAL_ALIGNMENT_TOP:
+#		label.position.y = anchor.position.y
+#		label.size.y = bottom_right.y - anchor.position.y
+#	elif ver_align == VERTICAL_ALIGNMENT_BOTTOM:
+#		label.position.y = bottom_right.y
+#		label.size.y = anchor.position.y - top_left.y
+		
+#	elif hor_align == HORIZONTAL_ALIGNMENT_RIGHT
+#	label.size = 
+#	label.label_settings.setup_local_to_scene()
+#	label.label_settings.font_size = text_placeholder.shape.size.y
+#	print(text_placeholder.shape.size.y)
+
+
+func update( seconds ):
+	var time = seconds % MAX_VALUE
+	value = time
+	if show_text: label.text = str( time / unit_mult )
+	if use_gradient:
+		var t: float = value / max_value
+		var index: int = int( t / delta )
+		var local_t: float = fmod( t, delta ) / delta
+
+		tint_progress = colors[index].lerp( colors[index+1], local_t ).lightened(0.2)
+"
+
+[sub_resource type="LabelSettings" id="LabelSettings_flwb1"]
+resource_local_to_scene = true
+line_spacing = 0.0
+font_size = 10
+
+[node name="Gauge" type="TextureProgressBar"]
+show_behind_parent = true
+z_index = -6
+offset_right = 128.0
+offset_bottom = 128.0
+page = 60.0
+fill_mode = 4
+texture_under = ExtResource("1_i1cbs")
+texture_progress = ExtResource("1_i1cbs")
+tint_under = Color(0, 0, 0, 1)
+script = SubResource("GDScript_ah8ox")
+
+[node name="Label" type="Label" parent="."]
+top_level = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "123"
+label_settings = SubResource("LabelSettings_flwb1")
+horizontal_alignment = 1
+vertical_alignment = 1

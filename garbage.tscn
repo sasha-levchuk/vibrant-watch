@@ -1,0 +1,155 @@
+[gd_scene load_steps=8 format=3 uid="uid://rl52fn3cnobt"]
+
+[ext_resource type="Texture2D" uid="uid://cey74pidop5xu" path="res://circle 128p.png" id="1_ykwnw"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nwl7w"]
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k2i2l"]
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[sub_resource type="GDScript" id="GDScript_ymbr8"]
+resource_name = "resize_button"
+script/source = "extends Button
+var mouse_offset : Vector2i
+signal on_resize_ended
+
+func _ready():
+	set_process_input(false)
+	on_resize_ended.connect($\"..\".save_cfg)
+
+
+func _input(event):
+	if not event is InputEventMouseMotion: return
+	var cursor = DisplayServer.mouse_get_position() + mouse_offset
+	var average = ( cursor.x + cursor.y ) / 2
+	get_window().size = Vector2i( average, average )
+
+
+func _on_button_down():
+	print(\"resizing start\")
+	Engine.max_fps = 60
+	set_process_input(true)
+	mouse_offset = get_window().size - Vector2i( DisplayServer.mouse_get_position() )
+
+
+func _on_button_up():
+	print(\"resizing end\")
+	Engine.max_fps = 1
+	set_process_input(false)
+	on_resize_ended.emit()
+
+
+func _on_mouse_entered():
+	print(\"resize handle hovered\")
+"
+
+[sub_resource type="GDScript" id="GDScript_trnfj"]
+resource_name = "progress"
+script/source = "class_name Progress extends TextureProgressBar
+var time : Dictionary
+@export var colors : PackedColorArray
+@onready var steps: int = colors.size() - 1
+@onready var label_hours: Label
+@onready var label_minutes: Label
+@onready var label_seconds: Label
+@onready var progress_seconds: TextureProgressBar
+
+func _process1(_delta):
+	time = Time.get_datetime_dict_from_system()
+	value = time.minute * 60 + time.second
+	label_hours.text = str( time.hour )
+	label_minutes.text = str( time.minute )
+	label_seconds.text = str( time.second )
+	if time.second == 0 and progress_seconds.value == 59:
+		var swap: Color = progress_seconds.tint_progress
+		progress_seconds.tint_progress = progress_seconds.tint_under
+		progress_seconds.tint_under = swap
+	progress_seconds.value = time.second
+	
+	var t: float = value / max_value
+	var delta: float = 1.0 / steps
+	var index: int = int( t / delta )
+	var local_t: float = fmod( t, delta ) / delta
+
+	tint_progress = colors[index].lerp( colors[index+1], local_t ).lightened(0.2)
+	tint_under = tint_progress.darkened(0.8)
+
+
+func _on_mouse_entered():
+	print(\"minutes mouse entered\")
+
+
+func _on_progress_seconds_mouse_entered():
+	print(\"seconds mouse entered\")
+"
+
+[sub_resource type="LabelSettings" id="LabelSettings_8ktn1"]
+font_size = 20
+
+[sub_resource type="LabelSettings" id="LabelSettings_yp2sd"]
+font_size = 36
+
+[node name="garbage" type="Node"]
+
+[node name="ResizeButton" type="Button" parent="."]
+visible = false
+modulate = Color(0.796078, 0.796078, 0.796078, 1)
+offset_left = 64.0
+offset_top = 64.0
+offset_right = 128.0
+offset_bottom = 128.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_nwl7w")
+theme_override_styles/hover = SubResource("StyleBoxFlat_k2i2l")
+icon = ExtResource("1_ykwnw")
+expand_icon = true
+script = SubResource("GDScript_ymbr8")
+
+[node name="MinutesProgress" type="TextureProgressBar" parent="."]
+visible = false
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 136.0
+offset_bottom = 136.0
+scale = Vector2(0.875, 0.875)
+max_value = 3600.0
+fill_mode = 4
+texture_under = ExtResource("1_ykwnw")
+texture_progress = ExtResource("1_ykwnw")
+tint_under = Color(1, 1, 1, 0)
+tint_progress = Color(0, 0, 0.160784, 0.752941)
+script = SubResource("GDScript_trnfj")
+
+[node name="LabelMinutes" type="Label" parent="MinutesProgress"]
+z_index = 1
+layout_mode = 0
+offset_left = 75.2223
+offset_top = 51.9339
+offset_right = 101.222
+offset_bottom = 82.9339
+text = "12"
+label_settings = SubResource("LabelSettings_8ktn1")
+vertical_alignment = 1
+
+[node name="LabelHours" type="Label" parent="."]
+visible = false
+z_index = 1
+offset_left = 35.3194
+offset_top = 39.5
+offset_right = 78.3194
+offset_bottom = 92.5
+text = "0"
+label_settings = SubResource("LabelSettings_yp2sd")
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[connection signal="button_down" from="ResizeButton" to="ResizeButton" method="_on_button_down"]
+[connection signal="button_up" from="ResizeButton" to="ResizeButton" method="_on_button_up"]
+[connection signal="mouse_entered" from="ResizeButton" to="ResizeButton" method="_on_mouse_entered"]
+[connection signal="mouse_entered" from="MinutesProgress" to="MinutesProgress" method="_on_mouse_entered" flags=18]
