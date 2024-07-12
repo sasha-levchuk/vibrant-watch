@@ -19,10 +19,10 @@ var VER_OFFSET: int = 3
 @export var use_gradient: bool = false
 @export var colors: PackedColorArray = PackedColorArray([
 	Color(1,0,1),
-	Color(0,0,1),
-	Color(0,1,1),
-	Color(0,1,0),
-	Color(1,1,0),
+	Color(0.2,0.2,1),
+	Color(0,0.6,0.6),
+	Color(0,0.8,0),
+	Color(0.8,0.8,0.2),
 	Color(1,0,0)])
 @onready var delta: float = 1.0 / ( colors.size() - 1 ) # this is for color calc
 @onready var label: Label = $Label
@@ -84,13 +84,19 @@ func _ready():
 func update( seconds ):
 	var time = seconds % MAX_VALUE
 	value = time
-	if show_text: label.text = str( time / unit_mult )
+#	print(value)
+	if show_text: 
+		if unit_mult==1:
+			label.text = \"{0}:{1}\".format([ time/60, '%02d' % (time%60) ])
+		else:
+			label.text = str( time / unit_mult )
 	if use_gradient:
 		var t: float = value / max_value
 		var index: int = int( t / delta )
 		var local_t: float = fmod( t, delta ) / delta
-
-		tint_progress = colors[index].lerp( colors[index+1], local_t ).lightened(0.2)
+		var color: Color = colors[index].lerp( colors[index+1], local_t )
+		tint_progress = color
+		label.label_settings.font_color = color.lightened(0.6)
 "
 
 [sub_resource type="LabelSettings" id="LabelSettings_flwb1"]
@@ -103,7 +109,6 @@ show_behind_parent = true
 z_index = -6
 offset_right = 128.0
 offset_bottom = 128.0
-page = 60.0
 fill_mode = 4
 texture_under = ExtResource("1_i1cbs")
 texture_progress = ExtResource("1_i1cbs")
