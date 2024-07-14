@@ -8,20 +8,27 @@ resource_name = "main"
 script/source = "extends Node2D
 const DEFAULT_SIZE = Vector2i(128,128)
 var config: ConfigFile = ConfigFile.new()
-var error = config.load(\"res://config.cfg\") # == OK:
+var CONFIG_PATH : String = \"res://config.cfg\"
+var error = config.load(CONFIG_PATH) # == OK:
 @onready var window: Window = get_window()
 enum Modes { WATCH, POMODORO, TIMER }
 @export var Mode: Modes
 @export var Gauges: Array[Node]
 @onready var seconds: int = config.get_value(\"time\", \"seconds\", 0)
-#signal on_window_changed
 signal second_passed
 
 
 func _ready():
+	var day: int = Time.get_datetime_dict_from_system().day
+	if day != config.get_value(\"time\", \"day\", 0):
+		seconds = 0
+		config.set_value(\"time\",\"day\",day)
+		config.set_value(\"time\",\"seconds\",0)
+		config.save(CONFIG_PATH)
 	Engine.max_fps = 1
 	window.position = config.get_value(\"window\", \"position\", Vector2i(1700,900))
-	window.size = config.get_value(\"window\", \"size\", DEFAULT_SIZE)
+	window.size = Vector2i(128,128)
+	#config.get_value(\"window\", \"size\", DEFAULT_SIZE)
 	for gauge in Gauges:
 		second_passed.connect(gauge.update)
 
@@ -29,15 +36,22 @@ func _ready():
 func _process(_delta):
 	seconds += 1
 	second_passed.emit(seconds)
-	if seconds%60==0: 
+	if seconds%60 == 0:
 		config.set_value(\"time\", \"seconds\", seconds)
 		config.save(\"config.cfg\")
+
+
+func _notification(what):
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		config.set_value(\"time\", \"seconds\", seconds)
+		config.save(CONFIG_PATH)
+		get_tree().quit() # default behavior
 
 
 func save_cfg():
 	config.set_value( \"window\", \"position\", window.position)
 	config.set_value( \"window\", \"size\", window.size)
-	config.save(\"config.cfg\")
+	config.save(CONFIG_PATH)
 	print(\"config saved\")
 
 
@@ -134,7 +148,6 @@ offset_top = 8.0
 offset_right = 136.0
 offset_bottom = 136.0
 scale = Vector2(0.875, 0.875)
-MAX_VALUE = 90
 time_unit = 1
 hor_side = 1
 ver_side = 1
@@ -155,13 +168,52 @@ text_size = 34
 anchor = NodePath("../text separator")
 use_gradient = true
 
+[node name="Line2D2" type="Line2D" parent="."]
+z_index = -2
+position = Vector2(64, 64)
+rotation = 1.0472
+points = PackedVector2Array(0, 0, 0, -62)
+width = 1.0
+default_color = Color(1, 1, 1, 0.188235)
+
+[node name="Line2D3" type="Line2D" parent="."]
+z_index = -2
+position = Vector2(64, 64)
+rotation = 2.0944
+points = PackedVector2Array(0, 0, 0, -62)
+width = 1.0
+default_color = Color(1, 1, 1, 0.188235)
+
+[node name="Line2D4" type="Line2D" parent="."]
+z_index = -2
+position = Vector2(64, 64)
+rotation = 3.14159
+points = PackedVector2Array(0, 0, 0, -62)
+width = 1.0
+default_color = Color(1, 1, 1, 0.188235)
+
+[node name="Line2D5" type="Line2D" parent="."]
+z_index = -2
+position = Vector2(64, 64)
+rotation = 4.18879
+points = PackedVector2Array(0, 0, 0, -62)
+width = 1.0
+default_color = Color(1, 1, 1, 0.188235)
+
+[node name="Line2D6" type="Line2D" parent="."]
+z_index = -2
+position = Vector2(64, 64)
+rotation = 5.23599
+points = PackedVector2Array(0, 0, 0, -62)
+width = 1.0
+default_color = Color(1, 1, 1, 0.188235)
+
 [node name="Circle128p" type="Sprite2D" parent="."]
-modulate = Color(0, 0, 0, 1)
+modulate = Color(0.0784314, 0.0784314, 0.0784314, 1)
 z_index = -1
 position = Vector2(64, 64)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("1_yikqb")
-metadata/_edit_lock_ = true
 
 [node name="DragButton" type="Button" parent="." node_paths=PackedStringArray("drag_node")]
 modulate = Color(1, 1, 1, 0)
