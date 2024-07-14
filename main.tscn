@@ -129,7 +129,7 @@ func _on_mouse_exited():
 
 [node name="Main" type="Node2D" node_paths=PackedStringArray("Gauges")]
 script = SubResource("GDScript_eu11m")
-Gauges = [NodePath("gauge 10m"), NodePath("gauge 90m"), NodePath("gauge 6h")]
+Gauges = [NodePath("gauge 10m"), NodePath("gauge 1h"), NodePath("gauge 6h")]
 
 [node name="text separator" type="Marker2D" parent="."]
 z_index = 6
@@ -137,12 +137,13 @@ z_as_relative = false
 position = Vector2(68, 61)
 
 [node name="gauge 10m" parent="." node_paths=PackedStringArray("anchor") instance=ExtResource("1_lq88f")]
+DIVISIONS = 10
 MAX_VALUE = 600
 hor_side = 1
 anchor = NodePath("../text separator")
 use_gradient = true
 
-[node name="gauge 90m" parent="." node_paths=PackedStringArray("anchor") instance=ExtResource("1_lq88f")]
+[node name="gauge 1h" parent="." node_paths=PackedStringArray("anchor") instance=ExtResource("1_lq88f")]
 offset_left = 8.0
 offset_top = 8.0
 offset_right = 136.0
@@ -167,46 +168,6 @@ ver_side = 2
 text_size = 34
 anchor = NodePath("../text separator")
 use_gradient = true
-
-[node name="Line2D2" type="Line2D" parent="."]
-z_index = -2
-position = Vector2(64, 64)
-rotation = 1.0472
-points = PackedVector2Array(0, 0, 0, -62)
-width = 1.0
-default_color = Color(1, 1, 1, 0.188235)
-
-[node name="Line2D3" type="Line2D" parent="."]
-z_index = -2
-position = Vector2(64, 64)
-rotation = 2.0944
-points = PackedVector2Array(0, 0, 0, -62)
-width = 1.0
-default_color = Color(1, 1, 1, 0.188235)
-
-[node name="Line2D4" type="Line2D" parent="."]
-z_index = -2
-position = Vector2(64, 64)
-rotation = 3.14159
-points = PackedVector2Array(0, 0, 0, -62)
-width = 1.0
-default_color = Color(1, 1, 1, 0.188235)
-
-[node name="Line2D5" type="Line2D" parent="."]
-z_index = -2
-position = Vector2(64, 64)
-rotation = 4.18879
-points = PackedVector2Array(0, 0, 0, -62)
-width = 1.0
-default_color = Color(1, 1, 1, 0.188235)
-
-[node name="Line2D6" type="Line2D" parent="."]
-z_index = -2
-position = Vector2(64, 64)
-rotation = 5.23599
-points = PackedVector2Array(0, 0, 0, -62)
-width = 1.0
-default_color = Color(1, 1, 1, 0.188235)
 
 [node name="Circle128p" type="Sprite2D" parent="."]
 modulate = Color(0.0784314, 0.0784314, 0.0784314, 1)
