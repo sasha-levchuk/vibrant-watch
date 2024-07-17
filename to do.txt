@@ -1,2 +1,2 @@
 fix text issues as minimum size
-save time upon alt-f4
+add some hover overlay

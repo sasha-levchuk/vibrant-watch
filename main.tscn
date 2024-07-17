@@ -48,21 +48,16 @@ func _notification(what):
 		get_tree().quit() # default behavior
 
 
-func save_cfg():
+func save_win():
 	config.set_value( \"window\", \"position\", window.position)
 	config.set_value( \"window\", \"size\", window.size)
 	config.save(CONFIG_PATH)
 	print(\"config saved\")
 
 
-func _on_drag_button_button_down():
-	set_process(false)
-	Engine.max_fps = 60
-
-
-func _on_drag_button_button_up():
-	set_process(true)
-	Engine.max_fps = 1
+func pause_updates( should_pause: bool ):
+	set_process( not should_pause )
+	Engine.max_fps = 0 if should_pause else 1
 "
 
 [sub_resource type="GDScript" id="GDScript_xqv6w"]
@@ -191,9 +186,9 @@ script = SubResource("GDScript_xqv6w")
 drag_node = NodePath("../Circle128p")
 metadata/_edit_lock_ = true
 
-[connection signal="button_down" from="DragButton" to="." method="_on_drag_button_button_down"]
 [connection signal="button_down" from="DragButton" to="DragButton" method="_on_button_down"]
-[connection signal="button_up" from="DragButton" to="." method="_on_drag_button_button_up"]
 [connection signal="button_up" from="DragButton" to="DragButton" method="_on_button_up"]
 [connection signal="mouse_entered" from="DragButton" to="DragButton" method="_on_mouse_entered"]
+[connection signal="mouse_entered" from="DragButton" to="." method="pause_updates" binds= [true]]
 [connection signal="mouse_exited" from="DragButton" to="DragButton" method="_on_mouse_exited"]
+[connection signal="mouse_exited" from="DragButton" to="." method="pause_updates" binds= [false]]
