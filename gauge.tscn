@@ -29,10 +29,6 @@ var VER_OFFSET: int = 3
 @onready var label: Label = $Label
 @onready var line: Line2D = $Line
 @onready var unit_mult := int( pow(60, time_unit) )
-@onready var label_update := Callable((
-	func(s): label.text = str(s/3600)
-	) if time_unit==TimeUnits.HOURS else (
-	func(s): label.text = str((s/unit_mult)%60).pad_zeros(2)))
 
 
 func _ready():
@@ -41,7 +37,7 @@ func _ready():
 	var top_left = Vector2(32,32)
 	var bottom_right = Vector2(96,96)
 	for i in range(1, DIVISIONS):
-		print(i)
+#		print(i)
 		var new_line = line.duplicate()
 		add_child(new_line)
 		new_line.rotation_degrees = i * 360 / DIVISIONS
@@ -96,14 +92,29 @@ func _ready():
 
 func update( seconds ):
 	value = seconds % MAX_VALUE
-	label_update.call(seconds)
-	if use_gradient:
-		var t: float = value / max_value
-		var index: int = int( t / delta )
-		var local_t: float = fmod( t, delta ) / delta
-		var color: Color = colors[index].lerp( colors[index+1], local_t )
-		tint_progress = color
-		label.label_settings.font_color = color.lightened(0.6)
+
+
+func update_colors( seconds ):
+	var percent: float = value / max_value
+	var index: int = int( percent / delta )
+	var local_percent: float = fmod( percent, delta ) / delta
+	var color: Color = colors[index].lerp( colors[index+1], local_percent )
+	if value + 10   > max_value and seconds % 2 == 0 : 
+		color = Color.WHITE
+	tint_progress = color
+	label.label_settings.font_color = color.lightened(0.6)
+
+
+func update_label( seconds ):
+	label.text = str(seconds/3600) if time_unit==TimeUnits.HOURS else str((seconds/unit_mult)%60).pad_zeros(2)
+	
+	
+func connect_callbacks( on_second_passed: Signal ):
+	on_second_passed.connect( update )
+	if show_text:
+		on_second_passed.connect( update_label )
+	if use_gradient: 
+		on_second_passed.connect( update_colors )
 "
 
 [sub_resource type="LabelSettings" id="LabelSettings_flwb1"]

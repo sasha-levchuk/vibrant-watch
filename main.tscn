@@ -15,7 +15,10 @@ enum Modes { WATCH, POMODORO, TIMER }
 @export var Mode: Modes
 @export var Gauges: Array[Node]
 @onready var seconds: int = config.get_value(\"time\", \"seconds\", 0)
-signal second_passed
+signal on_second_passed
+@onready var seconds_offset := seconds
+var prev_usec : int
+var deviations := []
 
 
 func _ready():
@@ -25,18 +28,24 @@ func _ready():
 		config.set_value(\"time\",\"day\",day)
 		config.set_value(\"time\",\"seconds\",0)
 		config.save(CONFIG_PATH)
-	Engine.max_fps = 1
+#	Engine.max_fps = 1
 	window.position = config.get_value(\"window\", \"position\", Vector2i(1700,900))
 	window.size = Vector2i(128,128)
 	#config.get_value(\"window\", \"size\", DEFAULT_SIZE)
 	for gauge in Gauges:
-		second_passed.connect(gauge.update)
+		gauge.connect_callbacks( on_second_passed )
+#		on_second_passed.connect(gauge.update)
 
 
 func _process(_delta):
 	seconds += 1
-	second_passed.emit(seconds)
+	on_second_passed.emit(seconds)
 	if seconds%60 == 0:
+		var usec = Time.get_ticks_usec()
+		if prev_usec:
+			deviations.append( usec - prev_usec )
+			print( deviations.reduce(func(a,b):return a+b) / deviations.size() )
+		prev_usec = usec
 		config.set_value(\"time\", \"seconds\", seconds)
 		config.save(\"config.cfg\")
 
