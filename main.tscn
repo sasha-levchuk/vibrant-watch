@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://f1vvoqdrimh7"]
+[gd_scene load_steps=8 format=3 uid="uid://f1vvoqdrimh7"]
 
 [ext_resource type="PackedScene" uid="uid://cpd7eamcb24bf" path="res://gauge.tscn" id="1_lq88f"]
 [ext_resource type="Texture2D" uid="uid://cey74pidop5xu" path="res://circle 128p.png" id="1_yikqb"]
@@ -28,7 +28,7 @@ func _ready():
 		config.set_value(\"time\",\"day\",day)
 		config.set_value(\"time\",\"seconds\",0)
 		config.save(CONFIG_PATH)
-#	Engine.max_fps = 1
+#	Engine.max_fps = 0
 	window.position = config.get_value(\"window\", \"position\", Vector2i(1700,900))
 	window.size = Vector2i(128,128)
 	#config.get_value(\"window\", \"size\", DEFAULT_SIZE)
@@ -68,6 +68,27 @@ func pause_updates( should_pause: bool ):
 	set_process( not should_pause )
 	Engine.max_fps = 0 if should_pause else 1
 "
+
+[sub_resource type="LabelSettings" id="LabelSettings_qy6vn"]
+resource_local_to_scene = true
+resource_name = "min"
+font_size = 14
+outline_size = 10
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_5xex3"]
+resource_local_to_scene = true
+resource_name = "min"
+font_size = 20
+outline_size = 12
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_hlpe0"]
+resource_local_to_scene = true
+resource_name = "hr"
+font_size = 30
+outline_size = 16
+outline_color = Color(0, 0, 0, 1)
 
 [sub_resource type="GDScript" id="GDScript_xqv6w"]
 resource_name = "drag_button"
@@ -133,52 +154,119 @@ func _on_mouse_exited():
 
 [node name="Main" type="Node2D" node_paths=PackedStringArray("Gauges")]
 script = SubResource("GDScript_eu11m")
-Gauges = [NodePath("gauge 10m"), NodePath("gauge 1h"), NodePath("gauge 6h")]
+Gauges = [NodePath("gauge 10m"), NodePath("clip mask min/gauge 1h"), NodePath("clip mask hour/gauge 6h")]
 
 [node name="text separator" type="Marker2D" parent="."]
 z_index = 6
 z_as_relative = false
 position = Vector2(68, 61)
 
-[node name="gauge 10m" parent="." node_paths=PackedStringArray("anchor") instance=ExtResource("1_lq88f")]
+[node name="gauge 10m" parent="." node_paths=PackedStringArray("label") instance=ExtResource("1_lq88f")]
+value = 88.0
+tint_progress = Color(1, 0.760784, 0, 1)
 DIVISIONS = 10
 MAX_VALUE = 600
 hor_side = 1
-anchor = NodePath("../text separator")
-use_gradient = true
+label = NodePath("Label sec")
 
-[node name="gauge 1h" parent="." node_paths=PackedStringArray("anchor") instance=ExtResource("1_lq88f")]
-offset_left = 8.0
-offset_top = 8.0
-offset_right = 136.0
-offset_bottom = 136.0
-scale = Vector2(0.875, 0.875)
+[node name="Circle128p" type="Sprite2D" parent="gauge 10m"]
+visible = false
+modulate = Color(0, 0, 0, 1)
+z_index = 1
+position = Vector2(64, 110)
+scale = Vector2(0.1875, 0.1875)
+texture = ExtResource("1_yikqb")
+
+[node name="Label sec" type="Label" parent="gauge 10m"]
+top_level = true
+layout_mode = 0
+offset_left = 103.0
+offset_top = 47.0
+offset_right = 119.0
+offset_bottom = 70.0
+text = "12"
+label_settings = SubResource("LabelSettings_qy6vn")
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="clip mask min" type="Polygon2D" parent="."]
+clip_children = 1
+polygon = PackedVector2Array(19, 30, 61, 6, 106, 25, 111, 43, 103, 47, 98, 53, 96, 61, 99, 69, 106, 75, 115, 77, 118, 79, 90, 116, 82, 121, 71, 121, 57, 120, 26, 105, 8, 72)
+
+[node name="gauge 1h" parent="clip mask min" node_paths=PackedStringArray("label") instance=ExtResource("1_lq88f")]
+offset_left = 12.8571
+offset_top = 12.8571
+offset_right = 140.857
+offset_bottom = 140.857
+scale = Vector2(0.8, 0.8)
+value = 77.0
+tint_progress = Color(0.756863, 1, 0.2, 1)
 time_unit = 1
 hor_side = 1
 ver_side = 1
-text_size = 16
-anchor = NodePath("../text separator")
-use_gradient = true
+label = NodePath("Label min")
 
-[node name="gauge 6h" parent="." node_paths=PackedStringArray("anchor") instance=ExtResource("1_lq88f")]
-offset_left = 24.0
-offset_top = 24.0
-offset_right = 152.0
-offset_bottom = 152.0
-scale = Vector2(0.625, 0.625)
+[node name="Circle128p2" type="Sprite2D" parent="clip mask min/gauge 1h"]
+visible = false
+modulate = Color(0, 0, 0, 1)
+z_index = 1
+position = Vector2(64, 93.7143)
+scale = Vector2(0.303572, 0.303572)
+texture = ExtResource("1_yikqb")
+
+[node name="Label min" type="Label" parent="clip mask min/gauge 1h"]
+top_level = true
+layout_mode = 0
+offset_left = 76.0
+offset_top = 72.0
+offset_right = 99.0
+offset_bottom = 103.0
+text = "34
+"
+label_settings = SubResource("LabelSettings_5xex3")
+horizontal_alignment = 1
+
+[node name="clip mask hour" type="Polygon2D" parent="."]
+clip_children = 1
+polygon = PackedVector2Array(29, 36, 64, 19, 95, 30, 93, 45, 88, 53, 87, 62, 89, 69, 82, 70, 74, 74, 69, 80, 67, 88, 68, 97, 63, 105, 55, 103, 48, 103, 39, 101, 28, 88, 22, 64)
+
+[node name="gauge 6h" parent="clip mask hour" node_paths=PackedStringArray("label") instance=ExtResource("1_lq88f")]
+clip_children = 2
+offset_left = 32.4286
+offset_top = 32.2857
+offset_right = 160.429
+offset_bottom = 160.286
+scale = Vector2(0.5, 0.5)
+value = 66.0
+tint_progress = Color(0, 0.486275, 1, 1)
+DIVISIONS = 1
 MAX_VALUE = 6
 time_unit = 2
 ver_side = 2
-text_size = 34
-anchor = NodePath("../text separator")
-use_gradient = true
+label = NodePath("Label hour")
 
-[node name="Circle128p" type="Sprite2D" parent="."]
-modulate = Color(0.0784314, 0.0784314, 0.0784314, 1)
-z_index = -1
+[node name="Circle128p3" type="Sprite2D" parent="clip mask hour/gauge 6h"]
+visible = false
+modulate = Color(0, 0, 0, 1)
+z_index = 1
+y_sort_enabled = true
 position = Vector2(64, 64)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("1_yikqb")
+
+[node name="Label hour" type="Label" parent="clip mask hour/gauge 6h"]
+top_level = true
+layout_mode = 0
+offset_left = 25.0
+offset_top = 31.0
+offset_right = 89.0
+offset_bottom = 95.0
+text = "5
+"
+label_settings = SubResource("LabelSettings_hlpe0")
+horizontal_alignment = 1
+vertical_alignment = 1
+justification_flags = 162
 
 [node name="DragButton" type="Button" parent="." node_paths=PackedStringArray("drag_node")]
 modulate = Color(1, 1, 1, 0)
@@ -192,7 +280,7 @@ offset_bottom = 128.0
 grow_horizontal = 2
 grow_vertical = 2
 script = SubResource("GDScript_xqv6w")
-drag_node = NodePath("../Circle128p")
+drag_node = NodePath("../gauge 10m/Circle128p")
 metadata/_edit_lock_ = true
 
 [connection signal="button_down" from="DragButton" to="DragButton" method="_on_button_down"]
