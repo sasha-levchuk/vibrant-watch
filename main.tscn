@@ -31,7 +31,7 @@ func _ready():
 		config.set_value(\"time\",\"day\",day)
 		config.set_value(\"time\",\"seconds\",0)
 		config.save(CONFIG_PATH)
-#	Engine.max_fps = 0
+	Engine.max_fps = 1
 	window.position = config.get_value(\"window\", \"position\", Vector2i(1700,900))
 	window.size = Vector2i(128,128)
 	#config.get_value(\"window\", \"size\", DEFAULT_SIZE)
@@ -41,7 +41,7 @@ func _ready():
 
 
 func _process(_delta):
-	seconds += 1
+	seconds += 1 # ( seconds + 7 ) % ( 60 * 60 * 6 )
 	on_second_passed.emit(seconds)
 	if seconds%60 == 0:
 		var usec = Time.get_ticks_usec()
@@ -137,18 +137,18 @@ func _on_button_down():
 
 func _on_button_up():
 	print(\"drag/resizing end\")
-	Engine.max_fps = 10
+#	Engine.max_fps = 10
 
 
 func _on_mouse_entered():
 	set_process_input(true)
-	Engine.max_fps = 10
+#	Engine.max_fps = 10
 	print(\"mouse entered\")
 
 
 func _on_mouse_exited():
 	set_process_input(false)
-	Engine.max_fps = 1
+#	Engine.max_fps = 1
 	print(\"mouse exited\")
 "
 
@@ -191,7 +191,7 @@ label = NodePath("../Label min")
 
 [node name="gauge 6h" parent="." node_paths=PackedStringArray("label") instance=ExtResource("1_lq88f")]
 clip_children = 2
-value = 66.0
+value = 92.0
 texture_under = ExtResource("5_dtm6b")
 texture_progress = ExtResource("5_dtm6b")
 tint_under = Color(0.05, 0.05, 0.05, 1)
@@ -226,6 +226,7 @@ value = 242.0
 fill_mode = 4
 texture_progress = ExtResource("3_axgda")
 tint_progress = Color(0, 0, 0, 1)
+metadata/_edit_lock_ = true
 
 [node name="Label min" type="Label" parent="."]
 top_level = true
@@ -252,6 +253,7 @@ value = 242.0
 fill_mode = 4
 texture_progress = ExtResource("4_oio1j")
 tint_progress = Color(0, 0, 0, 1)
+metadata/_edit_lock_ = true
 
 [node name="Label hour" type="Label" parent="."]
 top_level = true
