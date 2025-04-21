@@ -1,275 +1,325 @@
 [gd_scene load_steps=11 format=3 uid="uid://f1vvoqdrimh7"]
 
-[ext_resource type="Texture2D" uid="uid://fqj6npaqjotp" path="res://sprites/background.png" id="1_2sifn"]
+[ext_resource type="Texture2D" uid="uid://6bxdrswetq2b" path="res://sprites/circle black 128.png" id="1_7mycd"]
+[ext_resource type="Texture2D" uid="uid://cn6bsncafah0h" path="res://sprites/circle white 128.png" id="1_h2yge"]
 [ext_resource type="PackedScene" uid="uid://cpd7eamcb24bf" path="res://gauge.tscn" id="1_lq88f"]
-[ext_resource type="Texture2D" uid="uid://3xisc46jox17" path="res://sprites/gauge seconds.png" id="3_axgda"]
-[ext_resource type="Texture2D" uid="uid://bqtowx2ubwmwr" path="res://sprites/gauge minutes.png" id="4_oio1j"]
-[ext_resource type="Texture2D" uid="uid://dqp677r00aj1f" path="res://sprites/gauge hours.png" id="5_dtm6b"]
 
 [sub_resource type="GDScript" id="GDScript_eu11m"]
 resource_name = "main"
 script/source = "extends Node2D
-const DEFAULT_SIZE = Vector2i(128,128)
 var config: ConfigFile = ConfigFile.new()
-var CONFIG_PATH : String = \"res://config.cfg\"
-var error = config.load(CONFIG_PATH) # == OK:
+var CONFIG_PATH: String = \"res://config.cfg\"
+var error: int = config.load(CONFIG_PATH) # == OK:
+
 @onready var window: Window = get_window()
-enum Modes { WATCH, POMODORO, TIMER }
-@export var Mode: Modes
-@export var Gauges: Array[Node]
 @onready var seconds: int = config.get_value(\"time\", \"seconds\", 0)
-signal on_second_passed
-@onready var seconds_offset := seconds
-var prev_usec : int
-var deviations := []
+@export var label: Label
+@export var gauges: Array[TextureProgressBar]
+var is_dragging := false
+
+signal on_every_second
+signal on_every_minute
 
 
 func _ready():
-	var day: int = Time.get_datetime_dict_from_system().day
-	if day != config.get_value(\"time\", \"day\", 0):
-		seconds = 0
-		config.set_value(\"time\",\"day\",day)
-		config.set_value(\"time\",\"seconds\",0)
-		config.save(CONFIG_PATH)
+	check_date()
+	global.color = gauges[0].calc_color(seconds)
+	label.update(seconds)
+	for gauge in gauges:
+		gauge.setup(seconds, config.get_value(\"totals\",gauge.config_key,0))
+		if gauge.updated_every_sec:
+			on_every_second.connect(gauge.increment_wrapped)
+		else:
+			on_every_minute.connect(gauge.increment)
+
 	Engine.max_fps = 1
-	window.position = config.get_value(\"window\", \"position\", Vector2i(1700,900))
-	window.size = Vector2i(128,128)
-	#config.get_value(\"window\", \"size\", DEFAULT_SIZE)
-	for gauge in Gauges:
-		gauge.connect_callbacks( on_second_passed )
-#		on_second_passed.connect(gauge.update)
+	var pos: Vector2i = config.get_value(\"window\", \"position\", Vector2i(1700,900))
+	for screen in DisplayServer.get_screen_count():
+		var rect: Rect2i = DisplayServer.screen_get_usable_rect(screen)
+		if rect.has_point(pos):
+			window.position = pos
+			break
 
 
-func _process(_delta):
-	seconds += 1 # ( seconds + 7 ) % ( 60 * 60 * 6 )
-	on_second_passed.emit(seconds)
+func _input(event:InputEvent):
+	if event.is_action(\"space\") and event.pressed:
+		var should_pause: bool = not %PauseButton.is_pressed()
+		%PauseButton.set_visible(true)
+		%PauseButton.set_pressed(should_pause)
+		set_paused(should_pause)
+		%PanelPaused.set_visible(should_pause)
+		%PauseButton.set_visible(false)
+
+
+func debug( s:String, s2 := \"\" ):
+	prints(s, s2)
+	%DebugLabel.text += s + \" \" + s2 + \"\\n\"
+
+
+func check_date():
+	var new_date := Time.get_date_string_from_system()
+	var prev_date:String = config.get_value(\"time\", \"date\", \"\")
+	if new_date == prev_date: return
+	
+	var minutes := int(roundf(seconds/60.0))
+	config.set_value(\"past_dates\", prev_date, minutes)
+	config.set_value(\"totals\", \"week\", 
+		config.get_value(\"totals\", \"week\", 0) + minutes)
+	config.set_value(\"totals\", \"month\", 
+		config.get_value(\"totals\", \"month\", 0) + minutes)
+	
+	var weekday:int = Time.get_date_dict_from_system().weekday
+	if weekday==0: weekday=7
+	var prev_weekday:int = config.get_value(\"time\", \"weekday\", 8)
+	if weekday < prev_weekday:
+		config.set_value(\"totals\", \"week\", 0)
+	config.set_value(\"time\", \"weekday\", weekday)
+	
+	var month: int = Time.get_date_dict_from_system().month
+	var prev_month: int = config.get_value(\"time\", \"month\", 13)
+	if month != prev_month:
+		config.set_value(\"time\", \"month\", month)
+		config.set_value(\"totals\", \"month\", 0)
+	
+	seconds = 0
+	config.set_value(\"time\", \"date\", new_date)
+	save_cfg()
+
+
+func _process( _delta ):
+	seconds += 1
+	on_every_second.emit()
 	if seconds%60 == 0:
-		var usec = Time.get_ticks_usec()
-		if prev_usec:
-			deviations.append( usec - prev_usec )
-			print( deviations.reduce(func(a,b):return a+b) / deviations.size() )
-		prev_usec = usec
-		config.set_value(\"time\", \"seconds\", seconds)
-		config.save(\"config.cfg\")
+		global.color = gauges[0].calc_color(seconds)
+		label.update(seconds)
+		on_every_minute.emit()
+		save_cfg()
 
 
-func _notification(what):
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		config.set_value(\"time\", \"seconds\", seconds)
-		config.save(CONFIG_PATH)
-		get_tree().quit() # default behavior
+func _notification( what: int ):
+	match what:
+		#NOTIFICATION_APPLICATION_FOCUS_IN:
+			#print(\"focus in!\")
+		#NOTIFICATION_APPLICATION_FOCUS_OUT:
+			#print(\"focus out!\")
+		NOTIFICATION_WM_CLOSE_REQUEST:
+			quit()
 
 
-func save_win():
-	config.set_value( \"window\", \"position\", window.position)
-	config.set_value( \"window\", \"size\", window.size)
-	config.save(CONFIG_PATH)
-	print(\"config saved\")
+func quit():
+	save_cfg()
+	get_tree().quit() # default behavior
 
 
-func pause_updates( should_pause: bool ):
+func on_unhover():
+	if %DragButton.is_dragging: return
+	if %PauseButton.button_pressed: return
+	set_paused( false )
+
+
+func set_paused( should_pause: bool ):
 	set_process( not should_pause )
 	Engine.max_fps = 0 if should_pause else 1
+
+
+func reset_time():
+	seconds = 0
+	config.set_value(\"time\", \"seconds\", 0)
+	config.save( CONFIG_PATH )
+	update_gauges()
+
+
+func update_gauges():
+	global.color = gauges[0].calc_color(seconds)
+	label.update(seconds)
+	for gauge in gauges:
+		gauge.setup(seconds, config.get_value(\"totals\",gauge.config_key,0))
+
+
+func adjust_time( val: int ):
+	seconds += val
+	update_gauges()
+
+
+func save_cfg():
+	config.set_value(\"window\", \"position\", window.position )
+	config.set_value(\"time\", \"seconds\", seconds)
+	config.save( CONFIG_PATH )
 "
 
-[sub_resource type="LabelSettings" id="LabelSettings_qy6vn"]
-resource_local_to_scene = true
-resource_name = "min"
-font_size = 15
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_h2yge"]
+bg_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [sub_resource type="LabelSettings" id="LabelSettings_5xex3"]
 resource_local_to_scene = true
 resource_name = "min"
-font_size = 15
-outline_color = Color(0, 0, 0, 1)
+font_size = 18
 
-[sub_resource type="LabelSettings" id="LabelSettings_hlpe0"]
-resource_local_to_scene = true
-resource_name = "hr"
-font_size = 28
-outline_size = 16
-outline_color = Color(0, 0, 0, 1)
+[sub_resource type="GDScript" id="GDScript_h2yge"]
+resource_name = "label"
+script/source = "extends Label
+
+
+func update(seconds):
+	text = Time.get_time_string_from_unix_time(seconds).substr(0,5).trim_prefix('0')
+	label_settings.font_color = global.color.lightened(0.2)
+"
+
+[sub_resource type="GDScript" id="GDScript_1bvp3"]
+resource_name = "controls"
+script/source = "extends Control
+
+
+func _ready():
+	show()
+	for node:Control in get_children():
+		mouse_entered.connect( Callable(node,\"show\") )
+		mouse_exited.connect( Callable(node,\"hide\") )
+		node.hide()
+"
 
 [sub_resource type="GDScript" id="GDScript_xqv6w"]
 resource_name = "drag_button"
 script/source = "extends Button
-var state: int
-enum { IS_DRAGGING, IS_RESIZING }
 var drag_offset: Vector2i
-var init_center: Vector2i
-var init_distance: float
-var init_size: Vector2i
 @onready var win: Window = get_window()
-@export var drag_node: Node
+var is_dragging := false
+signal button_released_drag
 
 
 func _ready():
+	set_process(false)
 	set_process_input(false)
-
-
-func _input(event):
-	if not event is InputEventMouseMotion: return
-	if not is_pressed(): return
-	var mouse_pos: Vector2i = DisplayServer.mouse_get_position()
-	if state == IS_DRAGGING:
-		win.position = mouse_pos - drag_offset
-	elif state == IS_RESIZING:
-		var distance: float = ( mouse_pos - init_center ).length()
-		win.size = init_size * ( distance / init_distance )
-		var center = win.position + ( win.size / 2 )
-		win.position -= center - init_center
-		print( [ init_distance, distance, init_size, win.size, init_center, center ] )
 
 
 func _on_button_down():
-	var mouse_pos: Vector2i = DisplayServer.mouse_get_position()
-	init_center = win.position + win.size / 2
-	init_distance = ( mouse_pos - init_center ).length()
-	if init_distance < drag_node.get_rect().size.x * 0.5 * drag_node.scale.x:
-		print(\"drag start\")
-		state = IS_DRAGGING
-		drag_offset = mouse_pos - win.position
-	else:
-		print(\"resizing start\")
-		state = IS_RESIZING
-		init_size = win.size
-
-
-func _on_button_up():
-	print(\"drag/resizing end\")
-#	Engine.max_fps = 10
-
-
-func _on_mouse_entered():
+	is_dragging = true
 	set_process_input(true)
-#	Engine.max_fps = 10
-	print(\"mouse entered\")
+	drag_offset = DisplayServer.mouse_get_position() - win.position
+	set_process(true)
 
 
-func _on_mouse_exited():
+func _process(_delta):
+	win.position = DisplayServer.mouse_get_position() - drag_offset
+
+
+
+func _input(event:InputEvent):
+	if not event is InputEventMouseButton: return
+	if not event.is_released(): return
+	if not event.button_index == 1: return
+	
+	set_process(false)
 	set_process_input(false)
-#	Engine.max_fps = 1
-	print(\"mouse exited\")
+	is_dragging = false
+	button_released_drag.emit()
 "
 
-[node name="Main" type="Node2D" node_paths=PackedStringArray("Gauges")]
+[sub_resource type="LabelSettings" id="LabelSettings_h2yge"]
+font_size = 10
+
+[node name="Main" type="Node2D" node_paths=PackedStringArray("label", "gauges")]
 script = SubResource("GDScript_eu11m")
-Gauges = [NodePath("gauge 10m"), NodePath("gauge 1h"), NodePath("gauge 6h")]
+label = NodePath("Label")
+gauges = [NodePath("gauge hours"), NodePath("gauge minutes"), NodePath("gauge seconds"), NodePath("gauge week"), NodePath("gauge month")]
 
-[node name="Circle128p" type="Sprite2D" parent="."]
-z_index = -1
-position = Vector2(64, 64)
-texture = ExtResource("1_2sifn")
+[node name="Panel2" type="Sprite2D" parent="."]
+modulate = Color(0, 0, 0, 1)
+texture = ExtResource("1_h2yge")
+offset = Vector2(64, 64)
 
-[node name="text separator" type="Marker2D" parent="."]
-z_index = 6
-z_as_relative = false
-position = Vector2(66, 105)
-
-[node name="gauge 10m" parent="." node_paths=PackedStringArray("label") instance=ExtResource("1_lq88f")]
-value = 88.0
-texture_under = ExtResource("3_axgda")
-texture_progress = ExtResource("3_axgda")
-tint_under = Color(0.05, 0.05, 0.05, 1)
-tint_progress = Color(1, 0.760784, 0, 1)
-DIVISIONS = 10
-MAX_VALUE = 600
-hor_side = 1
-label = NodePath("../Label sec")
-
-[node name="gauge 1h" parent="." node_paths=PackedStringArray("label") instance=ExtResource("1_lq88f")]
-value = 77.0
-texture_under = ExtResource("4_oio1j")
-texture_progress = ExtResource("4_oio1j")
-tint_under = Color(0.05, 0.05, 0.05, 1)
-tint_progress = Color(0.756863, 1, 0.2, 1)
-DIVISIONS = 1
-time_unit = 1
-hor_side = 1
-ver_side = 1
-label = NodePath("../Label min")
-
-[node name="gauge 6h" parent="." node_paths=PackedStringArray("label") instance=ExtResource("1_lq88f")]
-clip_children = 2
-value = 92.0
-texture_under = ExtResource("5_dtm6b")
-texture_progress = ExtResource("5_dtm6b")
+[node name="gauge month" parent="." instance=ExtResource("1_lq88f")]
+scale = Vector2(0.96, 0.96)
+pivot_offset = Vector2(64, 64)
+max_value = 10560.0
+value = 6666.0
 tint_under = Color(0.05, 0.05, 0.05, 1)
 tint_progress = Color(0, 0.486275, 1, 1)
-DIVISIONS = 1
-MAX_VALUE = 6
-time_unit = 2
-ver_side = 2
-label = NodePath("../Label hour")
+DIVISIONS = 22
+big_div_freq = 5
+is_in_minutes = true
+updated_every_sec = false
+config_key = "month"
+is_repeating = false
+metadata/_edit_pinned_properties_ = [&"max_value"]
 
-[node name="Label sec" type="Label" parent="."]
-top_level = true
+[node name="background sprite2" type="Sprite2D" parent="."]
+modulate = Color(0, 0, 0, 1)
+position = Vector2(64, 64)
+scale = Vector2(0.92, 0.92)
+texture = ExtResource("1_h2yge")
+
+[node name="gauge week" parent="." instance=ExtResource("1_lq88f")]
 clip_children = 2
-offset_left = 86.0
-offset_top = 87.0
-offset_right = 105.0
-offset_bottom = 112.0
-text = "12"
-label_settings = SubResource("LabelSettings_qy6vn")
-horizontal_alignment = 1
-vertical_alignment = 1
+scale = Vector2(0.9, 0.9)
+pivot_offset = Vector2(64, 64)
+max_value = 2400.0
+value = 2222.0
+tint_under = Color(0.05, 0.05, 0.05, 1)
+tint_progress = Color(0, 0.486275, 1, 1)
+DIVISIONS = 40
+big_div_freq = 8
+is_in_minutes = true
+updated_every_sec = false
+config_key = "week"
+is_repeating = false
 
-[node name="TextureProgressBar" type="TextureProgressBar" parent="Label sec"]
-clip_children = 2
-layout_mode = 0
-offset_left = -86.0
-offset_top = -87.0
-offset_right = 42.0
-offset_bottom = 41.0
-max_value = 600.0
-value = 242.0
-fill_mode = 4
-texture_progress = ExtResource("3_axgda")
-tint_progress = Color(0, 0, 0, 1)
-metadata/_edit_lock_ = true
+[node name="background sprite3" type="Sprite2D" parent="."]
+position = Vector2(64, 64)
+scale = Vector2(0.85, 0.85)
+texture = ExtResource("1_7mycd")
 
-[node name="Label min" type="Label" parent="."]
-top_level = true
-clip_children = 2
-offset_left = 54.0
-offset_top = 86.0
-offset_right = 77.0
-offset_bottom = 112.0
-text = "34
-"
-label_settings = SubResource("LabelSettings_5xex3")
-horizontal_alignment = 1
-vertical_alignment = 1
-justification_flags = 162
+[node name="gauge seconds" parent="." instance=ExtResource("1_lq88f")]
+scale = Vector2(0.78, 0.78)
+pivot_offset = Vector2(64, 64)
+max_value = 60.0
+value = 60.0
+DIVISIONS = 60
+big_div_freq = 5
 
-[node name="TextureProgressBar" type="TextureProgressBar" parent="Label min"]
-layout_mode = 0
-offset_left = -54.0
-offset_top = -86.0
-offset_right = 74.0
-offset_bottom = 42.0
+[node name="background sprite4" type="Sprite2D" parent="."]
+position = Vector2(64, 64)
+scale = Vector2(0.72, 0.72)
+texture = ExtResource("1_7mycd")
+
+[node name="gauge minutes" parent="." instance=ExtResource("1_lq88f")]
+scale = Vector2(0.7, 0.7)
+pivot_offset = Vector2(64, 64)
 max_value = 3600.0
-value = 242.0
-fill_mode = 4
-texture_progress = ExtResource("4_oio1j")
-tint_progress = Color(0, 0, 0, 1)
-metadata/_edit_lock_ = true
+value = 2171.0
+tint_under = Color(0.05, 0.05, 0.05, 1)
+tint_progress = Color(0.756863, 1, 0.2, 1)
+big_div_freq = 0
 
-[node name="Label hour" type="Label" parent="."]
-top_level = true
-offset_left = 32.0
-offset_top = 30.0
-offset_right = 96.0
-offset_bottom = 94.0
-text = "5
-"
-label_settings = SubResource("LabelSettings_hlpe0")
-horizontal_alignment = 1
-vertical_alignment = 1
-justification_flags = 162
+[node name="background sprite5" type="Sprite2D" parent="."]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("1_7mycd")
 
-[node name="DragButton" type="Button" parent="." node_paths=PackedStringArray("drag_node")]
-modulate = Color(1, 1, 1, 0)
+[node name="gauge hours" parent="." instance=ExtResource("1_lq88f")]
+clip_children = 2
+scale = Vector2(0.48, 0.48)
+pivot_offset = Vector2(64, 64)
+max_value = 28800.0
+value = 22222.0
+tint_under = Color(0.05, 0.05, 0.05, 1)
+tint_progress = Color(0, 0.486275, 1, 1)
+DIVISIONS = 8
+big_div_freq = 0
+
+[node name="Panel" type="Panel" parent="."]
+offset_left = 42.0
+offset_top = 54.0
+offset_right = 86.0
+offset_bottom = 76.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_h2yge")
+
+[node name="Label" type="Label" parent="."]
+clip_children = 2
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -279,15 +329,130 @@ offset_right = 128.0
 offset_bottom = 128.0
 grow_horizontal = 2
 grow_vertical = 2
-script = SubResource("GDScript_xqv6w")
-drag_node = NodePath("../Circle128p")
-metadata/_edit_lock_ = true
+text = "2:34"
+label_settings = SubResource("LabelSettings_5xex3")
+horizontal_alignment = 1
+vertical_alignment = 1
+script = SubResource("GDScript_h2yge")
 
-[connection signal="value_changed" from="gauge 10m" to="Label sec/TextureProgressBar" method="set_value_no_signal"]
-[connection signal="value_changed" from="gauge 1h" to="Label min/TextureProgressBar" method="set_value_no_signal"]
-[connection signal="button_down" from="DragButton" to="DragButton" method="_on_button_down"]
-[connection signal="button_up" from="DragButton" to="DragButton" method="_on_button_up"]
-[connection signal="mouse_entered" from="DragButton" to="DragButton" method="_on_mouse_entered"]
-[connection signal="mouse_entered" from="DragButton" to="." method="pause_updates" binds= [true]]
-[connection signal="mouse_exited" from="DragButton" to="DragButton" method="_on_mouse_exited"]
-[connection signal="mouse_exited" from="DragButton" to="." method="pause_updates" binds= [false]]
+[node name="PanelPaused" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+visible = false
+self_modulate = Color(0.162066, 0.162066, 0.162066, 0.862745)
+z_index = 1
+position = Vector2(64, 64)
+scale = Vector2(0.97, 0.97)
+texture = ExtResource("1_h2yge")
+
+[node name="Controls" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+z_index = 2
+layout_mode = 3
+anchors_preset = 0
+offset_top = 1.0
+offset_right = 128.0
+offset_bottom = 128.0
+script = SubResource("GDScript_1bvp3")
+
+[node name="ResetButton" type="Button" parent="Controls"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 31.0
+offset_right = 38.0
+offset_bottom = 62.0
+mouse_filter = 1
+keep_pressed_outside = true
+text = "↺"
+
+[node name="DragButton" type="Button" parent="Controls"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 65.0
+offset_top = 31.0
+offset_right = 88.0
+offset_bottom = 62.0
+mouse_filter = 1
+keep_pressed_outside = true
+text = "↔"
+script = SubResource("GDScript_xqv6w")
+
+[node name="Label" type="Label" parent="Controls/DragButton"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 4.0
+offset_right = 47.0
+offset_bottom = 27.0
+text = "↕"
+
+[node name="QuitButton" type="Button" parent="Controls"]
+layout_mode = 0
+offset_left = 90.0
+offset_top = 31.0
+offset_right = 113.0
+offset_bottom = 62.0
+mouse_filter = 1
+keep_pressed_outside = true
+text = "⨯"
+
+[node name="PauseButton" type="Button" parent="Controls"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 40.0
+offset_top = 31.0
+offset_right = 63.0
+offset_bottom = 62.0
+mouse_filter = 1
+toggle_mode = true
+keep_pressed_outside = true
+text = "ll"
+
+[node name="SkipBackButton" type="Button" parent="Controls"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 64.0
+offset_right = 38.0
+offset_bottom = 95.0
+tooltip_text = "skip 5 minutes back"
+mouse_filter = 1
+keep_pressed_outside = true
+text = "↶"
+
+[node name="SkipAheadButton" type="Button" parent="Controls"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 64.0
+offset_right = 63.0
+offset_bottom = 95.0
+tooltip_text = "skip 5 minutes ahead"
+mouse_filter = 1
+keep_pressed_outside = true
+text = "↷"
+
+[node name="SaveButton" type="Button" parent="Controls"]
+layout_mode = 0
+offset_left = 65.0
+offset_top = 64.0
+offset_right = 88.0
+offset_bottom = 95.0
+mouse_filter = 1
+keep_pressed_outside = true
+text = "🖫"
+
+[node name="DebugLabel" type="Label" parent="."]
+unique_name_in_owner = true
+offset_right = 40.0
+offset_bottom = 23.0
+label_settings = SubResource("LabelSettings_h2yge")
+
+[connection signal="ready" from="PanelPaused" to="PanelPaused" method="hide"]
+[connection signal="mouse_entered" from="Controls" to="." method="set_paused" binds= [true]]
+[connection signal="mouse_exited" from="Controls" to="." method="on_unhover"]
+[connection signal="button_down" from="Controls/ResetButton" to="." method="reset_time"]
+[connection signal="button_down" from="Controls/DragButton" to="Controls/DragButton" method="_on_button_down"]
+[connection signal="button_released_drag" from="Controls/DragButton" to="." method="save_cfg"]
+[connection signal="button_down" from="Controls/QuitButton" to="." method="quit"]
+[connection signal="toggled" from="Controls/PauseButton" to="PanelPaused" method="set_visible"]
+[connection signal="pressed" from="Controls/SkipBackButton" to="." method="adjust_time" binds= [-300]]
+[connection signal="pressed" from="Controls/SkipAheadButton" to="." method="adjust_time" binds= [300]]
+[connection signal="pressed" from="Controls/SaveButton" to="." method="save_cfg"]

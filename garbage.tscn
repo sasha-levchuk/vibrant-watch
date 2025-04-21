@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://rl52fn3cnobt"]
 
-[ext_resource type="Texture2D" uid="uid://cey74pidop5xu" path="res://circle 128p.png" id="1_ykwnw"]
+[ext_resource type="Texture2D" uid="uid://cn6bsncafah0h" path="res://sprites/circle white 128.png" id="1_ykwnw"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nwl7w"]
 corner_radius_top_left = 32

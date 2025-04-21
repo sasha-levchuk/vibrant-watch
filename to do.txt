@@ -1,2 +1,0 @@
-fix text issues as minimum size
-add some hover overlay

@@ -1,137 +1,106 @@
 [gd_scene load_steps=3 format=3 uid="uid://cpd7eamcb24bf"]
 
-[ext_resource type="Texture2D" uid="uid://cey74pidop5xu" path="res://circle 128p.png" id="1_i1cbs"]
+[ext_resource type="Texture2D" uid="uid://cn6bsncafah0h" path="res://sprites/circle white 128.png" id="1_qe6sc"]
 
 [sub_resource type="GDScript" id="GDScript_ah8ox"]
 resource_name = "gauge"
 script/source = "extends TextureProgressBar
-@export var DIVISIONS: int = 6
-@export var MAX_VALUE: int = 60
-enum TimeUnits { SECONDS, MINUTES, HOURS }
-@export var time_unit: TimeUnits
-var show_text: bool = true
-enum HorSides {LEFT, RIGHT, BOTH}
-@export var hor_side: HorSides
-enum VerSides {TOP, BOTTOM, BOTH}
-@export var ver_side: VerSides
-var VER_OFFSET: int = 3
-#@export var text_size: int = 10
-#@export var anchor: Marker2D
-@export var use_gradient: bool = false
+@export var DIVISIONS := 12
+@export var big_div_freq := 4
+@export var is_in_minutes := false
+@export var updated_every_sec := true
+@export_enum(\"week\", \"month\") var config_key: String
+var offset: int
+@export var is_repeating := true
 @export var colors: PackedColorArray = PackedColorArray([
-	Color(1,   0,   1),
-	Color(0.2, 0.2, 1),
-	Color(0,   0.6, 0.6),
-	Color(0.2, 0.6, 0.2),
-	Color(0.8, 0.8, 0.0),
-	Color(1,   0,   0)])
-@onready var delta: float = 1.0 / ( colors.size() - 1 ) # this is for color calc
-@export var label: Label
-@onready var line: Line2D = $Line
-@onready var unit_mult := int( pow(60, time_unit) )
+	Color( 1,   0,   1   ),
+	Color( 0.2, 0.2, 1   ),
+	Color( 0,   0.6, 0.6 ),
+	Color( 0.2, 0.6, 0.2 ),
+	Color( 0.8, 0.8, 0.0 ),
+	Color( 1,   0,   0   )])
 
 
 func _ready():
-	MAX_VALUE *= unit_mult
-	max_value = MAX_VALUE
+	setup_divisions()
+
+
+func setup(val: int, minutes: int):
+	if is_in_minutes:
+		val /= 60
+	val += minutes
+	if is_repeating:
+		value = fmod(val, max_value)
+	else:
+		value = val
+	update_color()
+
+
+func increment():
+	value += 1
+	update_color()
+
+
+func increment_wrapped():
+	value = fmod( value+1, max_value )
+	update_color()
+
+
+func setup_divisions():
+	if big_div_freq==0: big_div_freq=99999
 	for i in range(1, DIVISIONS):
-#		print(i)
-		var new_line = line.duplicate()
+		var new_line = ($Line_Big if i%big_div_freq==0 else $Line).duplicate()
 		add_child(new_line)
 		new_line.rotation_degrees = i * 360 / DIVISIONS
-	line.queue_free()
-	
-#	if true: return
-#	if not show_text:
-#		label.queue_free()
-#		return
-#	label.label_settings.font_size = text_size
-#	var top_left = Vector2(32,32)
-#	var bottom_right = Vector2(96,96)
-#	label.horizontal_alignment = [
-#		HORIZONTAL_ALIGNMENT_RIGHT,
-#		HORIZONTAL_ALIGNMENT_LEFT,
-#		HORIZONTAL_ALIGNMENT_CENTER
-#	][ hor_side ]
-#	label.vertical_alignment = [
-#		VERTICAL_ALIGNMENT_BOTTOM,
-#		VERTICAL_ALIGNMENT_TOP,
-#		VERTICAL_ALIGNMENT_CENTER
-#	][ ver_side ]
-#	if hor_side==HorSides.RIGHT: 
-#		label.position.x = anchor.position.x
-#		label.size.x = bottom_right.x - anchor.position.x
-#	elif hor_side==HorSides.LEFT:
-#		label.size.x = anchor.position.x - top_left.x
-#	if ver_side==VerSides.BOTTOM: 
-#		label.position.y = anchor.position.y - VER_OFFSET
-#		label.size.y = bottom_right.y - anchor.position.y
-#	elif ver_side==VerSides.TOP:
-#		label.size.y = anchor.position.y - top_left.y + VER_OFFSET
-
-	
-	
-#	label.vertical_alignment = ver_align
-#	if hor_align == HORIZONTAL_ALIGNMENT_LEFT:
-#		label.size.x = bottom_right.x - anchor.position.x
-#	elif hor_align == HORIZONTAL_ALIGNMENT_RIGHT:
-#		label.position.x = top_left.x #anchor.position.x
-#		label.size.x = anchor.position.x - bottom_right.x
-#	if ver_align == VERTICAL_ALIGNMENT_TOP:
-#		label.position.y = anchor.position.y
-#		label.size.y = bottom_right.y - anchor.position.y
-#	elif ver_align == VERTICAL_ALIGNMENT_BOTTOM:
-#		label.position.y = bottom_right.y
-#		label.size.y = anchor.position.y - top_left.y
-		
-#	elif hor_align == HORIZONTAL_ALIGNMENT_RIGHT
-#	label.size = 
-#	label.label_settings.setup_local_to_scene()
-#	label.label_settings.font_size = text_placeholder.shape.size.y
-#	print(text_placeholder.shape.size.y)
+	$Line.queue_free()
+	$Line_Big.queue_free()
 
 
-func update( seconds ):
-	value = seconds % MAX_VALUE
+func soft_light(a:Color, b:Color):
+	return (Color.WHITE-2*b)*a*a+2*b*a
 
 
-func update_colors( seconds ):
-	var percent: float = value / max_value
-	var index: int = int( percent / delta )
-	var local_percent: float = fmod( percent, delta ) / delta
-	var color: Color = colors[index].lerp( colors[index+1], local_percent )
-	if value + 10 > max_value and seconds % 2 == 1 : 
-		color = Color.WHITE
-	tint_progress = color
-	label.label_settings.font_color = color #.lightened(0.6)
+func hard_light(a:Color ,b:Color ):
+	return 2*a*b if b.get_luminance() < 0.5 else (2*a.inverted()*b.inverted()).inverted()
 
 
-func update_label( seconds ):
-	label.text = str(seconds/3600) if time_unit==TimeUnits.HOURS else str((seconds/unit_mult)%60).pad_zeros(2)
+func overlay(a:Color, b:Color):
+	return hard_light(b,a)
 
 
-func connect_callbacks( on_second_passed: Signal ):
-	on_second_passed.connect( update )
-	if show_text:
-		on_second_passed.connect( update_label )
-	if use_gradient: 
-		on_second_passed.connect( update_colors )
+func update_color():
+	var col := calc_color( value )
+	col = soft_light( col, global.color )
+	col = col.lerp( global.color, 0.5)
+	tint_progress = col
+	#tint_progress = overlay( calc_color(value), global.color )
+	#tint_progress = hard_light( calc_color(value), global.color )
+
+
+func calc_color(val) -> Color:
+	var a: float = (colors.size()-1) * fmod(val/max_value, 1)
+	return colors[int(a)].lerp( colors[int(a+1)], fmod(a,1))
 "
 
 [node name="Gauge" type="TextureProgressBar"]
-show_behind_parent = true
 offset_right = 128.0
 offset_bottom = 128.0
+value = 100.0
+rounded = true
 fill_mode = 4
-texture_under = ExtResource("1_i1cbs")
-texture_progress = ExtResource("1_i1cbs")
+texture_progress = ExtResource("1_qe6sc")
 tint_under = Color(0, 0, 0, 1)
 script = SubResource("GDScript_ah8ox")
-use_gradient = true
-colors = PackedColorArray(0.454902, 0.2, 1, 1, 0, 0.533333, 1, 1, 0.258824, 0.831373, 0.258824, 1, 0.780392, 0.780392, 0.109804, 1, 1, 0.0666667, 0.286275, 1)
+colors = PackedColorArray(0.627451, 0.282353, 1, 1, 0, 0.533333, 1, 1, 0.258824, 0.831373, 0.258824, 1, 0.780392, 0.780392, 0.109804, 1, 1, 0.0666667, 0.286275, 1)
 
 [node name="Line" type="Line2D" parent="."]
 position = Vector2(64, 64)
-points = PackedVector2Array(0, -52, 0, -60)
+points = PackedVector2Array(0, 0, 0, -63)
 width = 2.0
-default_color = Color(0, 0, 0, 0.360784)
+default_color = Color(0, 0, 0, 0.372549)
+
+[node name="Line_Big" type="Line2D" parent="."]
+position = Vector2(64, 64)
+points = PackedVector2Array(0, 0, 0, -63)
+width = 3.0
+default_color = Color(0, 0, 0, 0.752941)
