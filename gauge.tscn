@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://cpd7eamcb24bf"]
+[gd_scene load_steps=4 format=3 uid="uid://cpd7eamcb24bf"]
 
 [ext_resource type="Texture2D" uid="uid://cn6bsncafah0h" path="res://sprites/circle white 128.png" id="1_qe6sc"]
+[ext_resource type="Gradient" uid="uid://xpbru2kl8ya0" path="res://gradient.tres" id="2_iwwpu"]
 
 [sub_resource type="GDScript" id="GDScript_ah8ox"]
 resource_name = "gauge"
@@ -19,9 +20,11 @@ var offset: int
 	Color( 0.2, 0.6, 0.2 ),
 	Color( 0.8, 0.8, 0.0 ),
 	Color( 1,   0,   0   )])
+@export var gradient: Gradient
 
 
 func _ready():
+	#print( gradient.sample(0.1) )
 	setup_divisions()
 
 
@@ -70,16 +73,17 @@ func overlay(a:Color, b:Color):
 
 func update_color():
 	var col := calc_color( value )
-	col = soft_light( col, global.color )
-	col = col.lerp( global.color, 0.5)
+	#col = soft_light( col, global.color )
+	col = col.lerp( global.color, 0.6 )
 	tint_progress = col
 	#tint_progress = overlay( calc_color(value), global.color )
 	#tint_progress = hard_light( calc_color(value), global.color )
 
 
 func calc_color(val) -> Color:
-	var a: float = (colors.size()-1) * fmod(val/max_value, 1)
-	return colors[int(a)].lerp( colors[int(a+1)], fmod(a,1))
+	return gradient.sample(val/max_value)
+	#var a: float = (colors.size()-1) * fmod(val/max_value, 1)
+	#return colors[int(a)].lerp( colors[int(a+1)], fmod(a,1))
 "
 
 [node name="Gauge" type="TextureProgressBar"]
@@ -92,6 +96,7 @@ texture_progress = ExtResource("1_qe6sc")
 tint_under = Color(0, 0, 0, 1)
 script = SubResource("GDScript_ah8ox")
 colors = PackedColorArray(0.627451, 0.282353, 1, 1, 0, 0.533333, 1, 1, 0.258824, 0.831373, 0.258824, 1, 0.780392, 0.780392, 0.109804, 1, 1, 0.0666667, 0.286275, 1)
+gradient = ExtResource("2_iwwpu")
 
 [node name="Line" type="Line2D" parent="."]
 position = Vector2(64, 64)
